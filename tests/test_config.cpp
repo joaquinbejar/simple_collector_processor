@@ -1,0 +1,55 @@
+//
+// Created by Joaquin Bejar Garcia on 20/10/23.
+//
+
+#include "collector/config.h"
+#include <catch2/catch_test_macros.hpp>
+#include "simple_logger/logger.h"
+
+using namespace collector::config;
+
+TEST_CASE("CollectorConfig Tests", "[CollectorConfig]") {
+    CollectorConfig config;
+
+    SECTION("Default Configuration") {
+        REQUIRE(config.get_api_url() == "https://api.polygon.io");
+        REQUIRE(config.get_api_key().empty());
+    }
+
+    SECTION("Validate with default settings") {
+        REQUIRE_FALSE(config.validate());
+    }
+
+
+    SECTION("from_json method") {
+        json j;
+        j["m_polygon_api_url"] = "https://api.fromjson.com";
+        j["m_polygon_api_key"] = "jsonkey123";
+
+        REQUIRE_THROWS(config.from_json(j));
+    }
+
+    SECTION("to_string method") {
+        std::string expected_str = R"(CollectorConfig {PolygonIOConfig { m_polygon_api_url='https://api.polygon.io', m_polygon_api_key=''}, {"RedisConfig":{"polygonio":{"m_polygon_api_key":"","m_polygon_api_url":"https://api.polygon.io"},"redis":{"connect_timeout":30000,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost","keep_alive":true,"loglevel":"info","password":"password","port":6379,"size":1000,"socket_timeout":30000,"tag":"tag","wait_timeout":30000}}}})";
+        REQUIRE(config.to_string() == expected_str);
+    }
+
+    SECTION("from_json method and key as param") {
+        json j;
+        j["polygonio"]["m_polygon_api_url"] = "https://api.fromjson.com";
+        j["polygonio"]["m_polygon_api_key"] = "jsonkey123";
+        j["redis"] = R"({"connect_timeout":0,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost",
+                         "password":"","port":6379,"size":1,"socket_timeout":0,"keep_alive":false,"wait_timeout":0,
+                         "tag":"tag"})"_json;
+        config.from_json(j);
+
+        REQUIRE(config.get_api_url() == "https://api.fromjson.com");
+        REQUIRE(config.get_api_key_as_param() == "apiKey=jsonkey123");
+        REQUIRE(config.validate());
+        REQUIRE(config.connection_options->port == 6379);
+        REQUIRE(config.connection_options->host == "localhost");
+        REQUIRE(config.connection_options->password.empty());
+        REQUIRE(config.connection_options->size == 1);
+        REQUIRE(config.connection_options->tag == "tag");
+    }
+}

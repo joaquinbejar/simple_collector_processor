@@ -1,0 +1,16 @@
+push:
+  stage: push
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker tag ${IMAGE}:${VERSION} ${REGISTRY}/${REPO}/${IMAGE}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+    - docker push ${REGISTRY}/${REPO}/${IMAGE}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+    - docker tag ${IMAGE}:${VERSION} ${REGISTRY}/${REPO}/${IMAGE}:${VERSION}
+    - docker push ${REGISTRY}/${REPO}/${IMAGE}:${VERSION}
+    - docker tag ${IMAGE}:${VERSION} ${REGISTRY}/${REPO}/${IMAGE}:latest
+    - docker push ${REGISTRY}/${REPO}/${IMAGE}:latest
+  tags:
+    - local
+  when: on_success
+  only:
+    - dev
