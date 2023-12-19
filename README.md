@@ -1,6 +1,6 @@
-# simple_polygon_io
+# simple_collector_processor
 
-Get tickers info from Polygon.io REST API and inject to a database (MariaDB) thru Redis consumer
+Base collector to use in a simple collector-processor architecture.
 
 ## Polygon.io
 
