@@ -19,7 +19,7 @@ TEST_CASE("CollectorConfig Tests", "[CollectorConfig]") {
     params.set_market(simple_polygon_io::tickers::Market::STOCKS); // Set params
 
 
-    std::function<JsonResponse(Params)> get_tickers = [&polygon_client](Params param) {
+    std::function<JsonResponse(Params)> get_tickers = [&polygon_client](const Params& param) {
         return polygon_client.get_tickers(param);
     };
     SECTION("Default Configuration") {
