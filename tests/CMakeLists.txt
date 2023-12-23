@@ -9,8 +9,8 @@ endif ()
 
 
 
-add_executable(test_config_tc test_config.cpp)
-target_include_directories(test_config_tc
+add_executable(test_config_collector test_config.cpp)
+target_include_directories(test_config_collector
         PRIVATE
         ${COLLECTOR_INCLUDE}
         ${SIMPLE_COLOR_INCLUDE}
@@ -25,8 +25,8 @@ target_include_directories(test_config_tc
         ${HIREDIS_HEADER}
 )
 
-target_link_libraries(test_config_tc PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(test_config_tc PRIVATE
+target_link_libraries(test_config_collector PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(test_config_collector PRIVATE
         simple_logger
         simple_config
         common
@@ -37,8 +37,8 @@ target_link_libraries(test_config_tc PRIVATE
 )
 
 
-add_executable(test_exceptions_tc test_exceptions.cpp)
-target_include_directories(test_exceptions_tc
+add_executable(test_exceptions_collector test_exceptions.cpp)
+target_include_directories(test_exceptions_collector
         PRIVATE
         ${COLLECTOR_INCLUDE}
         ${SIMPLE_COLOR_INCLUDE}
@@ -54,8 +54,8 @@ target_include_directories(test_exceptions_tc
         ${HIREDIS_HEADER}
 )
 
-target_link_libraries(test_exceptions_tc PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(test_exceptions_tc PRIVATE
+target_link_libraries(test_exceptions_collector PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(test_exceptions_collector PRIVATE
         simple_logger
         simple_config
         common
