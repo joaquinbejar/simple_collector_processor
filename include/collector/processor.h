@@ -28,8 +28,11 @@ namespace processor {
      * related to ticker data. Handles thread synchronization and safe data exchange
      * between threads.
      */
+    template<typename Params, typename JsonResponse>
     class CollectorProcessor {
     private:
+//        using Params = simple_polygon_io::tickers::TickersParams ;
+//        using JsonResponse = simple_polygon_io::tickers::JsonResponse;
         std::queue<Query> ticker_query_queue; ///< Queue for storing ticker queries.
         std::mutex mtx; ///< Mutex for thread synchronization.
         std::condition_variable cv; ///< Condition variable for thread management.
@@ -48,7 +51,7 @@ namespace processor {
 
         collector::config::CollectorConfig &m_config; ///< Configuration object.
 
-        void producer(); ///< Function to produce ticker data.
+        void producer(const Params &params, const std::function<JsonResponse(Params)>& get_client_method); ///< Function to produce queries.
         void consumer(); ///< Function to consume ticker data.
         void informer(); ///< Function to log information.
 
@@ -88,7 +91,7 @@ namespace processor {
          *
          * Initializes and starts the producer, consumer, and informer threads.
          */
-        void start();
+        void start(const Params &params, const std::function<JsonResponse(Params)>& getClientMethod);
 
         /**
          * @brief Returns the current size of the ticker queue.
@@ -106,4 +109,5 @@ namespace processor {
     };
 
 }
+#include "processor.ipp"
 #endif //COLLECTOR_PROCESSOR_H

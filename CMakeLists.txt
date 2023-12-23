@@ -19,7 +19,7 @@ set(COLLECTOR_SOURCE_FILES
         include/collector/processor.h
         src/config.cpp
         src/exceptions.cpp
-        src/processor.cpp
+#        src/processor.cpp
 )
 
 add_library(collector STATIC ${COLLECTOR_SOURCE_FILES})

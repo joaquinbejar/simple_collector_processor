@@ -4,21 +4,17 @@
 
 #include <collector/processor.h>
 
-
 namespace processor {
 
-    void CollectorProcessor::producer() {
+    template<typename Params, typename JsonResponse>
+    void CollectorProcessor<Params,JsonResponse>::producer(const Params &params, const std::function<JsonResponse(Params)>& get_client_method) {
         producer_is_running = true;
-        simple_polygon_io::client::PolygonIOClient polygon_client(m_config);
-        auto params = simple_polygon_io::tickers::TickersParams();
-        params.set_market(simple_polygon_io::tickers::Market::STOCKS);
-
 
         while (!stopThreads) {
             remaining_time = 0;
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Getting tickers...");
-            simple_polygon_io::tickers::JsonResponse tickers = polygon_client.get_tickers(params);
-            Queries queries = tickers.queries(m_config.connection_options->tag); // use redis tag as table name
+            JsonResponse json_response = get_client_method(params); // call API
+            Queries queries = json_response.queries(m_config.connection_options->tag); // create queries
             std::for_each(queries.begin(), queries.end(), [this](const Query &query) {
                 size_t queue_size = size();
                 if (queue_size >= m_config.max_queue_size) {
@@ -42,7 +38,8 @@ namespace processor {
         m_config.logger->send<simple_logger::LogLevel::NOTICE>("Producer stopped");
     }
 
-    void CollectorProcessor::consumer() {
+    template<typename Params, typename JsonResponse>
+    void CollectorProcessor<Params,JsonResponse>::consumer() {
         consumer_is_running = true;
         simple_redis::FIFORedisClient redis_client(m_config);
         redis_client.connect();
@@ -82,17 +79,20 @@ namespace processor {
         consumer_is_running = false;
     }
 
-    CollectorProcessor::CollectorProcessor(collector::config::CollectorConfig &config)
+    template<typename Params, typename JsonResponse>
+    CollectorProcessor<Params,JsonResponse>::CollectorProcessor(collector::config::CollectorConfig &config)
             : m_config(config) {
     }
 
-    CollectorProcessor::~CollectorProcessor() {
+    template<typename Params, typename JsonResponse>
+    CollectorProcessor<Params,JsonResponse>::~CollectorProcessor() {
         if (stopThreads)
             return;
         stop();
     }
 
-    void CollectorProcessor::stop() {
+    template<typename Params, typename JsonResponse>
+    void CollectorProcessor<Params,JsonResponse>::stop() {
         stopThreads = true;
         cv.notify_all();
         if (producerThread.joinable()) {
@@ -106,18 +106,21 @@ namespace processor {
         }
     }
 
-    bool CollectorProcessor::is_running() const {
+    template<typename Params, typename JsonResponse>
+    bool CollectorProcessor<Params,JsonResponse>::is_running() const {
         return !stopThreads || producer_is_running || consumer_is_running;
     }
 
-    void CollectorProcessor::start() {
+    template<typename Params, typename JsonResponse>
+    void CollectorProcessor<Params,JsonResponse>::start(const Params &params, const std::function<JsonResponse(Params)>& getClientMethod) {
         stopThreads = false;
-        producerThread = std::thread(&CollectorProcessor::producer, this);
-        consumerThread = std::thread(&CollectorProcessor::consumer, this);
-        informerThread = std::thread(&CollectorProcessor::informer, this);
+        producerThread = std::thread(&CollectorProcessor<Params,JsonResponse>::producer, this, params, getClientMethod);
+        consumerThread = std::thread(&CollectorProcessor<Params,JsonResponse>::consumer, this);
+        informerThread = std::thread(&CollectorProcessor<Params,JsonResponse>::informer, this);
     }
 
-    void CollectorProcessor::informer() {
+    template<typename Params, typename JsonResponse>
+    void CollectorProcessor<Params,JsonResponse>::informer() {
         size_t prev_enqueue_counter = 0;
         size_t prev_dequeue_counter = 0;
         size_t max_enqueue_speed = 0;
@@ -157,7 +160,8 @@ namespace processor {
         }
     }
 
-    size_t CollectorProcessor::size() {
+    template<typename Params, typename JsonResponse>
+    size_t CollectorProcessor<Params,JsonResponse>::size() {
         std::unique_lock<std::mutex> lock(mtx);
         size_t size = ticker_query_queue.size();
         cv.notify_one();
