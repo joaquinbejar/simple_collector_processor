@@ -1,0 +1,10 @@
+build:
+  stage: build
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker build --no-cache --build-arg GITLAB_USERNAME=gitlab-ci-token --build-arg GITLAB_TOKEN=${CI_JOB_TOKEN} -f Docker/Dockerfile -t ${IMAGE}:${VERSION} .
+  tags:
+    - local
+  only:
+    - dev

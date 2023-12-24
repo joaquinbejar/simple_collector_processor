@@ -1,0 +1,24 @@
+# Ignore all files with these extensions
+*.o
+*.so
+*.a
+
+# Ignore specific directories
+build/
+tmp/
+test_output/
+cmake-build-*/
+
+# Ignore specific files
+Dockerfile*
+.dockerignore
+.git
+.gitignore
+.run/
+.idea/
+
+# Ignore editor/IDE specific files
+*.swp
+*~
+.DS_Store
+.vscode/
