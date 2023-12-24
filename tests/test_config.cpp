@@ -30,7 +30,7 @@ TEST_CASE("CollectorConfig Tests", "[CollectorConfig]") {
     }
 
     SECTION("to_string method") {
-        std::string expected_str = R"(CollectorConfig {PolygonIOConfig { m_polygon_api_url='https://api.polygon.io', m_polygon_api_key=''}, {"RedisConfig":{"polygonio":{"m_polygon_api_key":"","m_polygon_api_url":"https://api.polygon.io"},"redis":{"connect_timeout":30000,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost","keep_alive":true,"loglevel":"info","password":"password","port":6379,"size":1000,"socket_timeout":30000,"tag":"tag","wait_timeout":30000}}}})";
+        std::string expected_str = R"(CollectorConfig {PolygonIOConfig { m_polygon_api_url='https://api.polygon.io', m_polygon_api_key=''}, {"RedisConfig":{"collect_interval":3600,"database":"Polygon","informer_interval":333,"max_queue_size":10000,"polygonio":{"m_polygon_api_key":"","m_polygon_api_url":"https://api.polygon.io"},"producer_interval":10,"redis":{"connect_timeout":30000,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost","keep_alive":true,"loglevel":"info","password":"password","port":6379,"size":1000,"socket_timeout":30000,"tag":"tag","wait_timeout":30000},"table":""}}})";
         REQUIRE(config.to_string() == expected_str);
     }
 
@@ -38,6 +38,7 @@ TEST_CASE("CollectorConfig Tests", "[CollectorConfig]") {
         json j;
         j["polygonio"]["m_polygon_api_url"] = "https://api.fromjson.com";
         j["polygonio"]["m_polygon_api_key"] = "jsonkey123";
+        j["table"] = "table";
         j["redis"] = R"({"connect_timeout":0,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost",
                          "password":"","port":6379,"size":1,"socket_timeout":0,"keep_alive":false,"wait_timeout":0,
                          "tag":"tag"})"_json;

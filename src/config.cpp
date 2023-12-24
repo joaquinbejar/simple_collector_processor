@@ -21,6 +21,14 @@ namespace collector::config {
             logger->send<simple_logger::LogLevel::ERROR>("Redis is not valid");
             return false;
         }
+        if (database.empty()) {
+            logger->send<simple_logger::LogLevel::ERROR>("Database is empty");
+            return false;
+        }
+        if (table.empty()) {
+            logger->send<simple_logger::LogLevel::ERROR>("Table is empty");
+            return false;
+        }
         return true;
     }
 
@@ -35,6 +43,12 @@ namespace collector::config {
         json j;
         j["polygonio"] = simple_polygon_io::config::PolygonIOConfig::to_json();
         j["redis"] = simple_redis::RedisConfig::to_json();
+        j["informer_interval"] = informer_interval.count();
+        j["producer_interval"] = producer_interval.count();
+        j["max_queue_size"] = max_queue_size;
+        j["collect_interval"] = collect_interval.count();
+        j["database"] = database;
+        j["table"] = table;
 
         return j;
     }
@@ -62,6 +76,24 @@ namespace collector::config {
         try {
             simple_polygon_io::config::PolygonIOConfig::from_json(j["polygonio"]);
             simple_redis::RedisConfig::from_json(j["redis"]);
+            if (j.contains("informer_interval")) {
+                informer_interval = std::chrono::milliseconds(j["informer_interval"].get<int>());
+            }
+            if (j.contains("producer_interval")) {
+                producer_interval = std::chrono::milliseconds(j["producer_interval"].get<int>());
+            }
+            if (j.contains("max_queue_size")) {
+                max_queue_size = j["max_queue_size"].get<size_t>();
+            }
+            if (j.contains("collect_interval")) {
+                collect_interval = std::chrono::seconds(j["collect_interval"].get<int>());
+            }
+            if (j.contains("database")) {
+                database = j["database"].get<std::string>();
+            }
+            if (j.contains("table")) {
+                table = j["table"].get<std::string>();
+            }
         } catch (json::exception &e) {
             logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: " + std::string(e.what()));
             throw e;

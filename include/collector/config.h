@@ -33,6 +33,7 @@ namespace collector::config {
         std::chrono::seconds collect_interval = std::chrono::seconds(
                 common::get_env_variable_int("COLLECT_INTERVAL_SEC", 3600));
         std::string database = common::get_env_variable_string("DATABASE", "Polygon");
+        std::string table = common::get_env_variable_string("TABLE", "");
     };
 }
 
