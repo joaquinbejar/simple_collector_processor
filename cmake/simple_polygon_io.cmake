@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(simple_polygon_io
         GIT_REPOSITORY https://github.com/joaquinbejar/simple-polygon-io.git
-        GIT_TAG v0.1.1
+        GIT_TAG dev
         )
 FetchContent_MakeAvailable(simple_polygon_io)
 
