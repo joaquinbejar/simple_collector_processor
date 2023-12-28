@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(simple_redis
         GIT_REPOSITORY https://github.com/joaquinbejar/simple_redis.git
-        GIT_TAG v0.1.1
+        GIT_TAG v0.1.2
         )
 FetchContent_MakeAvailable(simple_redis)
 
