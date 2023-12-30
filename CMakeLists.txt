@@ -62,6 +62,13 @@ target_link_libraries(collector
 set(COLLECTOR_TESTS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 option(NO_COLLECTOR_TESTS "collector Disable collector tests" OFF)
 if (NOT NO_COLLECTOR_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(Catch2
+            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+            GIT_TAG v3.4.0
+    )
+    FETCHCONTENT_GETPROPERTIES(Catch2)
+    FETCHCONTENT_MAKEAVAILABLE(Catch2)
     set(CURL_DISABLE_TESTS ON)
     add_subdirectory(tests)
 endif ()
