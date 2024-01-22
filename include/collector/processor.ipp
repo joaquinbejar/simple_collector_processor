@@ -12,7 +12,7 @@ namespace processor {
 
         while (!stopThreads) {
             remaining_time = 0;
-            m_config.logger->send<simple_logger::LogLevel::NOTICE>("Getting records...");
+            m_config.logger->send<simple_logger::LogLevel::DEBUG>("Getting records...");
             JsonResponse json_response = get_client_method(params); // call API
             Queries queries = json_response.queries(m_config.table); // create queries m_config.connection_options->tag
             std::for_each(queries.begin(), queries.end(), [this](const Query &query) {
