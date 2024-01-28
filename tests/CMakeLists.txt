@@ -92,3 +92,35 @@ target_link_libraries(test_processor PRIVATE
         collector
         simple_redis
 )
+
+add_executable(test_kafkaforwarder test_kafkaforwarder.cpp)
+target_include_directories(test_processor
+        PRIVATE
+        ${COLLECTOR_INCLUDE}
+        ${SIMPLE_COLOR_INCLUDE}
+        ${SIMPLE_CONFIG_INCLUDE}
+        ${SIMPLE_LOGGER_INCLUDE}
+        ${NLOHMANN_JSON_INCLUDE}
+        ${COMMON_INCLUDE}
+        ${CURL_INCLUDE}
+        ${SIMPLE_POLYGON_IO_INCLUDE}
+        ${REDISCPP_HEADER}
+        ${REDISCPP_HEADER17}
+        ${REDISCPP_HEADERTLS}
+        ${HIREDIS_HEADER}
+        ${SIMPLE_KAFKA_INCLUDE}
+        ${TRADING_COMMON_INCLUDE}
+)
+
+target_link_libraries(test_kafkaforwarder PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(test_kafkaforwarder PRIVATE
+        simple_logger
+        simple_config
+        common
+        simple_polygon_io
+        libcurl_static
+        collector
+        simple_redis
+        simple_kafka
+        trading_common
+)

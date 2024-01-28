@@ -31,8 +31,6 @@ namespace processor {
     template<typename Params, typename JsonResponse>
     class CollectorProcessor {
     private:
-//        using Params = simple_polygon_io::tickers::TickersParams ;
-//        using JsonResponse = simple_polygon_io::tickers::JsonResponse;
         std::queue<Query> ticker_query_queue; ///< Queue for storing ticker queries.
         std::mutex mtx; ///< Mutex for thread synchronization.
         std::condition_variable cv; ///< Condition variable for thread management.
