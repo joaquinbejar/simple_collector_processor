@@ -10,7 +10,11 @@
 using namespace collector::config;
 using namespace trading::instructions;
 using forwarder::InstructionsExecutorAndForwarder;
+using forwarder::query_t;
 using json = nlohmann::json;
+
+typedef std::vector<std::string> queries_t;
+
 
 class TestInstruction {
 public:
@@ -30,16 +34,24 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
 
         std::function<Instructions<TestInstruction>()> test_instruction_lambda = []() -> Instructions<TestInstruction> {
             Instructions<TestInstruction> instructions;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             return instructions;
         };
 
-        std::function<std::string()> string_lambda = []() -> std::string {
-            return "I'm string_lambda";
+        std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](Instructions<TestInstruction> instruction) -> queries_t {
+            // Aquí procesas la instrucción y generas las consultas (queries)
+            // sleep for 1 seconds
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            return {"query1", "query2"};
         };
 
-        forwarder.start(test_instruction_lambda, string_lambda, nullptr, nullptr);
+        std::function<bool(query_t)> redis_lambda = [](const query_t& query) -> bool {
+            return true;
+        };
+
+        forwarder.start(test_instruction_lambda, strings_lambda, redis_lambda, nullptr);
         //sleep for 30 seconds
-        std::this_thread::sleep_for(std::chrono::seconds(30));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
         forwarder.stop();
     }
 }
