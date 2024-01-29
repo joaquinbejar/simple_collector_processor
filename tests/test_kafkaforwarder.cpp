@@ -32,11 +32,11 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
         std::cout << config.to_json().dump(4) << std::endl;
         InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<TestInstruction>(config);
 
-        std::function<Instructions<TestInstruction>()> test_instruction_lambda = []() -> Instructions<TestInstruction> {
-            Instructions<TestInstruction> instructions;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            return instructions;
-        };
+//        std::function<Instructions<TestInstruction>()> test_instruction_lambda = []() -> Instructions<TestInstruction> {
+//            Instructions<TestInstruction> instructions;
+//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//            return instructions;
+//        };
 
         std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
             // Aquí procesas la instrucción y generas las consultas (queries)
@@ -49,7 +49,7 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
             return true;
         };
 
-        forwarder.start(test_instruction_lambda, strings_lambda, redis_lambda, nullptr);
+        forwarder.start( strings_lambda, redis_lambda, nullptr);
         //sleep for 30 seconds
         std::this_thread::sleep_for(std::chrono::seconds(10));
         forwarder.stop();
