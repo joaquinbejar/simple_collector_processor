@@ -38,7 +38,7 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
             return instructions;
         };
 
-        std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](Instructions<TestInstruction> instruction) -> queries_t {
+        std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
             // Aquí procesas la instrucción y generas las consultas (queries)
             // sleep for 1 seconds
             std::this_thread::sleep_for(std::chrono::milliseconds(10));

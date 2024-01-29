@@ -14,23 +14,57 @@
 #include <trading_common/instructions.h>
 #include <collector/config.h>
 #include <string>
+#include <simple_kafka/client.h>
 
 namespace forwarder {
 
     typedef std::string query_t;
     typedef std::vector<std::string> queries_t;
-
     using namespace trading::instructions;
+    using simple_kafka::client::KafkaClientConsumer;
+    using ::common::ThreadQueueWithMaxSize;
+    using ::common::ThreadQueue;
+
+    template<typename T>
+    class MetaConsumer {
+
+    public:
+        ThreadQueue<std::string> message_q;
+
+        MetaConsumer() = default;
+
+        void from_string(const std::string &msg) {
+            message_q.enqueue(msg);
+        }
+
+        Instructions<T> get_instruction(std::shared_ptr<simple_logger::Logger> logger) {
+            std::string msg;
+            try {
+                message_q.dequeue_blocking(msg);
+                if (msg.empty())
+                    return {};
+                Instructions<T> instruction;
+                instruction.from_string(msg);  // throws exception if msg is not a valid instruction
+                return instruction;
+            } catch (std::exception &e) {
+                logger->send<simple_logger::LogLevel::DEBUG>("Instruction string was: " + msg);
+                logger->send<simple_logger::LogLevel::ERROR>(e.what());
+                return {};
+            }
+        }
+    };
+
 
     template<typename InstructionType>
     class InstructionsExecutorAndForwarder {
 
     private:
         collector::config::ForwarderConfig m_config;
+        KafkaClientConsumer<MetaConsumer<InstructionType>> kafka_client =
+                KafkaClientConsumer<MetaConsumer<InstructionType>>(m_config);
 
-        ::common::ThreadQueue<Instructions<InstructionType>> m_queue_instructions;
-        ::common::ThreadQueueWithMaxSize<query_t> m_queue_queries = ::common::ThreadQueueWithMaxSize<query_t>(
-                m_config.max_queue_size);
+        ThreadQueue<Instructions<InstructionType>> m_queue_instructions;
+        ThreadQueueWithMaxSize<query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
 
 
         std::thread m_instructor_consumer_thread;
@@ -62,7 +96,9 @@ namespace forwarder {
             m_instructor_consumer_is_running = true;
             while (!m_stop_threads) {
                 // TASK: Get instructions from kafka and put them in m_queue_instructions
-                auto instruction = instructor_consumer_context(); // get instruction from kafka
+//                auto instruction = instructor_consumer_context(); // get instruction from kafka
+                auto instruction = kafka_client.caster.get_instruction(m_config.logger);
+
                 if (m_queue_instructions.enqueue(instruction)) {
                     m_queue_instructions_enqueue_counter++;
                 } else {
@@ -132,7 +168,7 @@ namespace forwarder {
             while (!m_stop_threads || m_instructor_consumer_is_running || m_instructor_executor_is_running ||
                    m_query_forwarder_is_running) {
                 // TASK: Get stats from queues and threads and show them in console
-                m_config.logger->send<simple_logger::LogLevel::INFORMATIONAL>("\033[2J\033[1;1H",true);
+                m_config.logger->send<simple_logger::LogLevel::INFORMATIONAL>("\033[2J\033[1;1H", true);
 
                 std::string is_running;
                 if (m_instructor_consumer_is_running)
@@ -175,15 +211,15 @@ namespace forwarder {
                                                                               std::to_string(
                                                                                       m_queue_queries_enqueue_errors));
                 m_config.logger->send<simple_logger::LogLevel::INFORMATIONAL>("Q_Queries dequeue counter: " +
-                                                                                std::to_string(
-                                                                                        m_queue_queries_dequeue_counter) +
-                                                                                " errors: " +
-                                                                                std::to_string(
-                                                                                        m_queue_queries_dequeue_errors));
+                                                                              std::to_string(
+                                                                                      m_queue_queries_dequeue_counter) +
+                                                                              " errors: " +
+                                                                              std::to_string(
+                                                                                      m_queue_queries_dequeue_errors));
 
                 m_config.logger->send<simple_logger::LogLevel::INFORMATIONAL>("Redis counter: " +
                                                                               std::to_string(m_redis_counter) +
-                        " Redis errors: " +
+                                                                              " Redis errors: " +
                                                                               std::to_string(m_redis_errors));
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(m_config.informer_interval));
@@ -203,10 +239,15 @@ namespace forwarder {
 
         InstructionsExecutorAndForwarder &operator=(InstructionsExecutorAndForwarder &&other) noexcept = delete;
 
-        explicit InstructionsExecutorAndForwarder(collector::config::ForwarderConfig config) : m_config(
-                std::move(config)) {}
+        explicit InstructionsExecutorAndForwarder(collector::config::ForwarderConfig config) {
+            m_config = std::move(config);
+            kafka_client.subscribe();
+            kafka_client.consume();
+        }
 
         ~InstructionsExecutorAndForwarder() {
+            kafka_client.unsubscribe();
+            kafka_client.stop();
             if (m_stop_threads)
                 return;
             stop();
@@ -216,6 +257,8 @@ namespace forwarder {
                    std::function<queries_t(Instructions<InstructionType>)> instructor_executor_context,
                    std::function<bool(query_t)> query_forwarder_context,
                    void *informer_context) {
+
+
             m_instructor_consumer_thread = std::thread(&InstructionsExecutorAndForwarder::m_instructor_consumer, this,
                                                        std::ref(instructor_consumer_context));
             m_instructor_executor_thread = std::thread(&InstructionsExecutorAndForwarder::m_instructor_executor, this,
@@ -239,8 +282,6 @@ namespace forwarder {
                 m_informer_thread.join();
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("InstructionsExecutorAndForwarder stopped");
         }
-
-
     };
 
 
