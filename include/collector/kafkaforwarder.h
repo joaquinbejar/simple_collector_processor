@@ -29,7 +29,7 @@ namespace forwarder {
     class MetaConsumer {
 
     public:
-        ThreadQueue<std::string> message_q;
+        ThreadQueue <std::string> message_q;
 
         MetaConsumer() = default;
 
@@ -37,15 +37,20 @@ namespace forwarder {
             message_q.enqueue(msg);
         }
 
-        Instructions<T> get_instruction(const std::shared_ptr<simple_logger::Logger> &logger) {
+        Instructions <T> get_instruction(const std::shared_ptr<simple_logger::Logger> &logger) {
             std::string msg;
             try {
                 message_q.dequeue_blocking(msg);
                 if (msg.empty())
                     return {};
-                Instructions<T> instruction;
-                instruction.from_string(msg);  // throws exception if msg is not a valid instruction
-                return instruction;
+                Instructions <T> instruction;
+                instruction.from_string(msg);
+                if (instruction.validate()) {
+                    return instruction;
+                } else {
+                    logger->send<simple_logger::LogLevel::ERROR>("Instruction is not valid: " + msg);
+                    return {};
+                }
             } catch (std::exception &e) {
                 logger->send<simple_logger::LogLevel::DEBUG>("Instruction string was: " + msg);
                 logger->send<simple_logger::LogLevel::ERROR>(e.what());
@@ -54,17 +59,16 @@ namespace forwarder {
         }
     };
 
-
     template<typename InstructionType>
     class InstructionsExecutorAndForwarder {
 
     private:
         collector::config::ForwarderConfig m_config;
-        KafkaClientConsumer<MetaConsumer<InstructionType>> kafka_client =
+        KafkaClientConsumer <MetaConsumer<InstructionType>> kafka_client =
                 KafkaClientConsumer<MetaConsumer<InstructionType>>(m_config);
 
-        ThreadQueue<Instructions<InstructionType>> m_queue_instructions;
-        ThreadQueueWithMaxSize<query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
+        ThreadQueue <Instructions<InstructionType>> m_queue_instructions;
+        ThreadQueueWithMaxSize <query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
 
 
         std::thread m_instructor_consumer_thread;
@@ -91,11 +95,14 @@ namespace forwarder {
         std::atomic<size_t> m_redis_counter = 0;
         std::atomic<size_t> m_redis_errors = 0;
 
+        /*
+         * TASK: Get instructions from kafka and put them in m_queue_instructions
+         */
         void m_instructor_consumer() {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Instructor Consumer started");
             m_instructor_consumer_is_running = true;
             while (!m_stop_threads) {
-                // TASK: Get instructions from kafka and put them in m_queue_instructions
+
                 auto instruction = kafka_client.caster.get_instruction(m_config.logger);
                 if (instruction.type == Type::NONE)
                     continue;
@@ -110,19 +117,24 @@ namespace forwarder {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Instructor Consumer stopped");
         }
 
+        /*
+         * TASK: Get instructions from m_queue_instructions and execute them,
+         * get data from polygon and put it in m_queue_queries as a query_t
+         */
         void m_instructor_executor(
-                const std::function<queries_t(Instructions<InstructionType>)> &instructor_executor_context) {
+                const std::function<queries_t(Instructions < InstructionType > )> &instructor_executor_context) {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Instructor Executor started");
             m_instructor_executor_is_running = true;
             while (!m_stop_threads || m_instructor_consumer_is_running || !m_queue_instructions.empty()) {
-                // TASK: Get instructions from m_queue_instructions and execute them,
-                // get data from polygon and put it in m_queue_queries as a query_t
-                Instructions<InstructionType> instruction;
+                Instructions <InstructionType> instruction;
                 queries_t queries;
 
+                // TODO: implement instructor_executor_context
                 try {
                     if (m_queue_instructions.dequeue_blocking(instruction)) {
                         queries = instructor_executor_context(instruction); // execute instruction and return the queries
+                        m_config.logger->send<simple_logger::LogLevel::DEBUG>("Instruction executed: " +
+                                                                              instruction.to_string());
                         m_queue_instructions_dequeue_counter++;
                     }
                 } catch (std::exception &e) {
@@ -261,10 +273,9 @@ namespace forwarder {
             stop();
         }
 
-        void start(
-                std::function<queries_t(Instructions<InstructionType>)> instructor_executor_context,
-                std::function<bool(query_t)> query_forwarder_context,
-                void *informer_context) {
+        void start(std::function<queries_t(Instructions < InstructionType > )> instructor_executor_context,
+                   std::function<bool(query_t)> query_forwarder_context,
+                   void *informer_context) {
 
 
             m_instructor_consumer_thread = std::thread(&InstructionsExecutorAndForwarder::m_instructor_consumer, this);

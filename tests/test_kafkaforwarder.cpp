@@ -42,7 +42,7 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
             // Aquí procesas la instrucción y generas las consultas (queries)
             // sleep for 1 seconds
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            return {"query1", "query2"};
+            return {"SELECT 1", "SELECT 2"};
         };
 
         std::function<bool(query_t)> redis_lambda = [](const query_t& query) -> bool {
