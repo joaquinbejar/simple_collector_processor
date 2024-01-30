@@ -177,7 +177,7 @@ namespace forwarder {
                 try {
                     if (m_queue_queries.dequeue_blocking(query)) {
                         m_queue_queries_dequeue_counter++;
-                        // query_forwarder_context could be use to check if query is valid
+                        // query_forwarder_context could be used to check if query is valid
                         if (!query.empty() && query_forwarder_context(query)) {
                             // send query to redis with database tag
                             if (m_redis_client.set(m_config.redis_key, query)) {
