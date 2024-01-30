@@ -147,9 +147,6 @@ namespace forwarder {
                 }
 
                 std::for_each(queries.begin(), queries.end(), [&](const query_t &query) {
-
-                    std::cout << "Query: " << query << std::endl;
-
                     if (m_queue_queries.enqueue(query)) {
                         m_queue_queries_enqueue_counter++;
                     } else {

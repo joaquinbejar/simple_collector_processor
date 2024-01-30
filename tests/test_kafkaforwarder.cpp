@@ -39,7 +39,7 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
 //        };
 
         std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
-            std::cout << "instructor_executor_context: " << instruction.to_json().dump(4) << std::endl;
+//            std::cout << "instructor_executor_context: " << instruction.to_json().dump(4) << std::endl;
             // Aquí procesas la instrucción y generas las consultas (queries)
             // sleep for 1 seconds
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
