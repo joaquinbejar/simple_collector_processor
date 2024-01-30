@@ -134,6 +134,10 @@ namespace collector::config {
             logger->send<simple_logger::LogLevel::ERROR>("Kafka is not valid");
             return false;
         }
+        if (redis_key.empty()) {
+            logger->send<simple_logger::LogLevel::ERROR>("Redis key is empty");
+            return false;
+        }
         return true;
     }
 
@@ -153,6 +157,7 @@ namespace collector::config {
         j["producer_interval"] = producer_interval.count();
         j["max_queue_size"] = max_queue_size;
         j["collect_interval"] = collect_interval.count();
+        j["redis_key"] = redis_key;
 
         return j;
     }
@@ -166,39 +171,34 @@ namespace collector::config {
      */
     void ForwarderConfig::from_json(const json &j) {
         if (j.empty()) {
-            logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: empty JSON");
-            throw simple_config::ConfigException("Error parsing CollectorConfig: empty JSON");
+            logger->send<simple_logger::LogLevel::ERROR>("Error parsing ForwarderConfig: empty JSON");
+            throw simple_config::ConfigException("Error parsing ForwarderConfig: empty JSON");
         }
         if (!j.contains("polygonio")) {
-            logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: polygonio not found");
-            throw simple_config::ConfigException("Error parsing CollectorConfig: polygonio not found");
+            logger->send<simple_logger::LogLevel::ERROR>("Error parsing ForwarderConfig: polygonio not found");
+            throw simple_config::ConfigException("Error parsing ForwarderConfig: polygonio not found");
         }
         if (!j.contains("redis")) {
-            logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: redis not found");
-            throw simple_config::ConfigException("Error parsing CollectorConfig: redis not found");
+            logger->send<simple_logger::LogLevel::ERROR>("Error parsing ForwarderConfig: redis not found");
+            throw simple_config::ConfigException("Error parsing ForwarderConfig: redis not found");
         }
         if (!j.contains("kafka")) {
-            logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: kafka not found");
-            throw simple_config::ConfigException("Error parsing CollectorConfig: kafka not found");
+            logger->send<simple_logger::LogLevel::ERROR>("Error parsing ForwarderConfig: kafka not found");
+            throw simple_config::ConfigException("Error parsing ForwarderConfig: kafka not found");
         }
         try {
             simple_polygon_io::config::PolygonIOConfig::from_json(j["polygonio"]);
             simple_redis::RedisConfig::from_json(j["redis"]);
             simple_kafka::config::KafkaConfig::from_json(j["kafka"]);
-            if (j.contains("informer_interval")) {
-                informer_interval = std::chrono::milliseconds(j["informer_interval"].get<int>());
-            }
-            if (j.contains("producer_interval")) {
-                producer_interval = std::chrono::milliseconds(j["producer_interval"].get<int>());
-            }
-            if (j.contains("max_queue_size")) {
-                max_queue_size = j["max_queue_size"].get<size_t>();
-            }
-            if (j.contains("collect_interval")) {
-                collect_interval = std::chrono::seconds(j["collect_interval"].get<int>());
-            }
+
+            informer_interval = std::chrono::milliseconds(j.at("informer_interval").get<int>());
+            producer_interval = std::chrono::milliseconds(j.at("producer_interval").get<int>());
+            max_queue_size = j.at("max_queue_size").get<size_t>();
+            collect_interval = std::chrono::seconds(j.at("collect_interval").get<int>());
+            redis_key = j.at("redis_key").get<std::string>();
+
         } catch (json::exception &e) {
-            logger->send<simple_logger::LogLevel::ERROR>("Error parsing CollectorConfig: " + std::string(e.what()));
+            logger->send<simple_logger::LogLevel::ERROR>("Error parsing ForwarderConfig: " + std::string(e.what()));
             throw e;
         }
     }
@@ -212,7 +212,7 @@ namespace collector::config {
      * @return A string representing the configuration settings.
      */
     std::string ForwarderConfig::to_string() const {
-        return (std::string) R"("ForwarderConfig": )" + this->to_json().dump();
+        return (std::string) R"("ForwarderConfig":)" + this->to_json().dump();
     }
 
 }

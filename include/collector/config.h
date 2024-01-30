@@ -61,6 +61,7 @@ namespace collector::config {
         size_t max_queue_size = common::get_env_variable_int("MAX_QUEUE_SIZE", 10000);
         std::chrono::seconds collect_interval = std::chrono::seconds(
                 common::get_env_variable_int("COLLECT_INTERVAL_SEC", 3600)); // TODO: check if needed
+        std::string redis_key = common::get_env_variable_string("REDIS_KEY", "");
     };
 
 }

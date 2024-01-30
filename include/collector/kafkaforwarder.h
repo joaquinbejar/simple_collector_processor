@@ -15,6 +15,7 @@
 #include <collector/config.h>
 #include <string>
 #include <simple_kafka/client.h>
+#include "simple_redis/fifo.h"
 
 namespace forwarder {
 
@@ -29,7 +30,7 @@ namespace forwarder {
     class MetaConsumer {
 
     public:
-        ThreadQueue <std::string> message_q;
+        ThreadQueue<std::string> message_q;
 
         MetaConsumer() = default;
 
@@ -37,13 +38,13 @@ namespace forwarder {
             message_q.enqueue(msg);
         }
 
-        Instructions <T> get_instruction(const std::shared_ptr<simple_logger::Logger> &logger) {
+        Instructions<T> get_instruction(const std::shared_ptr<simple_logger::Logger> &logger) {
             std::string msg;
             try {
                 message_q.dequeue_blocking(msg);
                 if (msg.empty())
                     return {};
-                Instructions <T> instruction;
+                Instructions<T> instruction;
                 instruction.from_string(msg);
                 if (instruction.validate()) {
                     return instruction;
@@ -64,11 +65,13 @@ namespace forwarder {
 
     private:
         collector::config::ForwarderConfig m_config;
-        KafkaClientConsumer <MetaConsumer<InstructionType>> kafka_client =
+        KafkaClientConsumer<MetaConsumer<InstructionType>> kafka_client =
                 KafkaClientConsumer<MetaConsumer<InstructionType>>(m_config);
+        simple_redis::FIFORedisClient m_redis_client = simple_redis::FIFORedisClient(m_config);
 
-        ThreadQueue <Instructions<InstructionType>> m_queue_instructions;
-        ThreadQueueWithMaxSize <query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
+
+        ThreadQueue<Instructions<InstructionType>> m_queue_instructions;
+        ThreadQueueWithMaxSize<query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
 
 
         std::thread m_instructor_consumer_thread;
@@ -122,17 +125,18 @@ namespace forwarder {
          * get data from polygon and put it in m_queue_queries as a query_t
          */
         void m_instructor_executor(
-                const std::function<queries_t(Instructions < InstructionType > )> &instructor_executor_context) {
+                const std::function<queries_t(Instructions<InstructionType>)> &instructor_executor_context) {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Instructor Executor started");
             m_instructor_executor_is_running = true;
             while (!m_stop_threads || m_instructor_consumer_is_running || !m_queue_instructions.empty()) {
-                Instructions <InstructionType> instruction;
+                Instructions<InstructionType> instruction;
                 queries_t queries;
 
                 // TODO: implement instructor_executor_context
                 try {
                     if (m_queue_instructions.dequeue_blocking(instruction)) {
-                        queries = instructor_executor_context(instruction); // execute instruction and return the queries
+                        queries = instructor_executor_context(
+                                instruction); // execute instruction and return the queries
                         m_config.logger->send<simple_logger::LogLevel::DEBUG>("Instruction executed: " +
                                                                               instruction.to_string());
                         m_queue_instructions_dequeue_counter++;
@@ -157,6 +161,11 @@ namespace forwarder {
         void m_query_forwarder(const std::function<bool(query_t)> &query_forwarder_context) {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Query Forwarder started");
             m_query_forwarder_is_running = true;
+            m_redis_client.connect();
+            if (!m_redis_client.is_connected()) {
+                m_config.logger->send<simple_logger::LogLevel::ERROR>("Redis client not connected");
+                return;
+            }
             while (!m_stop_threads || m_instructor_executor_is_running || !m_queue_queries.empty()) {
                 // TASK: Get query_t from m_queue_queries and send it to Redis to insert in DB
                 query_t query;
@@ -164,13 +173,24 @@ namespace forwarder {
                 try {
                     if (m_queue_queries.dequeue_blocking(query)) {
                         m_queue_queries_dequeue_counter++;
-                        // send query to redis
-                        if (query_forwarder_context(query)) {
-                            // query sent to redis
-                            m_redis_counter++;
-
-                        } else {
-                            m_redis_errors++;
+//                        // send query to redis
+//                        if (query_forwarder_context(query)) {
+//                            // query sent to redis
+//                            m_redis_counter++;
+//                        } else {
+//                            m_redis_errors++;
+//                        }
+                        if (!query.empty()) {
+                            // send query to redis with database tag
+                            if (m_redis_client.set(m_config.redis_key, query)) {
+                                m_config.logger->send<simple_logger::LogLevel::DEBUG>("Query: " + query);
+                                m_redis_counter++;
+                            } else {
+                                m_config.logger->send<simple_logger::LogLevel::ERROR>("Error sending query to redis: " +
+                                                                                      query);
+                                m_queue_queries.enqueue(query);
+                                m_redis_errors++;
+                            }
                         }
                     }
                 } catch (std::exception &e) {
@@ -273,7 +293,7 @@ namespace forwarder {
             stop();
         }
 
-        void start(std::function<queries_t(Instructions < InstructionType > )> instructor_executor_context,
+        void start(std::function<queries_t(Instructions<InstructionType>)> instructor_executor_context,
                    std::function<bool(query_t)> query_forwarder_context,
                    void *informer_context) {
 
