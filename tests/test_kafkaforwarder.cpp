@@ -39,13 +39,15 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
 //        };
 
         std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
+            std::cout << "instructor_executor_context: " << instruction.to_json().dump(4) << std::endl;
             // Aquí procesas la instrucción y generas las consultas (queries)
             // sleep for 1 seconds
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             return {"SELECT 1", "SELECT 2"};
         };
 
-        std::function<bool(query_t)> redis_lambda = [](const query_t& query) -> bool {
+        std::function<bool(query_t&)> redis_lambda = [](query_t& query) -> bool {
+            query += ";";
             return true;
         };
 

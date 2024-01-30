@@ -135,8 +135,8 @@ namespace forwarder {
                 // TODO: implement instructor_executor_context
                 try {
                     if (m_queue_instructions.dequeue_blocking(instruction)) {
-                        queries = instructor_executor_context(
-                                instruction); // execute instruction and return the queries
+                        // execute instruction and return the queries
+                        queries = instructor_executor_context(instruction);
                         m_config.logger->send<simple_logger::LogLevel::DEBUG>("Instruction executed: " +
                                                                               instruction.to_string());
                         m_queue_instructions_dequeue_counter++;
@@ -147,6 +147,9 @@ namespace forwarder {
                 }
 
                 std::for_each(queries.begin(), queries.end(), [&](const query_t &query) {
+
+                    std::cout << "Query: " << query << std::endl;
+
                     if (m_queue_queries.enqueue(query)) {
                         m_queue_queries_enqueue_counter++;
                     } else {
@@ -158,7 +161,10 @@ namespace forwarder {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Instructor Executor stopped");
         }
 
-        void m_query_forwarder(const std::function<bool(query_t)> &query_forwarder_context) {
+        /*
+         * TASK: Get query_t from m_queue_queries and send it to Redis to insert in DB
+         */
+        void m_query_forwarder(const std::function<bool(query_t&)> &query_forwarder_context) {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Query Forwarder started");
             m_query_forwarder_is_running = true;
             m_redis_client.connect();
@@ -167,20 +173,12 @@ namespace forwarder {
                 return;
             }
             while (!m_stop_threads || m_instructor_executor_is_running || !m_queue_queries.empty()) {
-                // TASK: Get query_t from m_queue_queries and send it to Redis to insert in DB
                 query_t query;
-
                 try {
                     if (m_queue_queries.dequeue_blocking(query)) {
                         m_queue_queries_dequeue_counter++;
-//                        // send query to redis
-//                        if (query_forwarder_context(query)) {
-//                            // query sent to redis
-//                            m_redis_counter++;
-//                        } else {
-//                            m_redis_errors++;
-//                        }
-                        if (!query.empty()) {
+                        // query_forwarder_context could be use to check if query is valid
+                        if (!query.empty() && query_forwarder_context(query)) {
                             // send query to redis with database tag
                             if (m_redis_client.set(m_config.redis_key, query)) {
                                 m_config.logger->send<simple_logger::LogLevel::DEBUG>("Query: " + query);
@@ -281,6 +279,8 @@ namespace forwarder {
 
         explicit InstructionsExecutorAndForwarder(collector::config::ForwarderConfig config) {
             m_config = std::move(config);
+            if (!m_config.validate())
+                throw std::runtime_error("Invalid configuration");
             kafka_client.subscribe();
             kafka_client.consume();
         }
@@ -294,7 +294,7 @@ namespace forwarder {
         }
 
         void start(std::function<queries_t(Instructions<InstructionType>)> instructor_executor_context,
-                   std::function<bool(query_t)> query_forwarder_context,
+                   std::function<bool(query_t&)> query_forwarder_context,
                    void *informer_context) {
 
 
