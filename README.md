@@ -1,4 +1,4 @@
-# simple_collector_processor v0.1.3
+# simple_collector_processor v0.1.4
 
 Base collector to use in a simple collector-processor architecture.
 

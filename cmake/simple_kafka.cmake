@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(simple_kafka
         GIT_REPOSITORY https://github.com/joaquinbejar/simple_kafka.git
-        GIT_TAG dev
+        GIT_TAG v0.1.0
         )
 FetchContent_MakeAvailable(simple_kafka)
 
