@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(trading_common
         GIT_REPOSITORY https://github.com/joaquinbejar/trading_common.git
-        GIT_TAG dev
+        GIT_TAG v0.1.0
         )
 FetchContent_MakeAvailable(trading_common)
 

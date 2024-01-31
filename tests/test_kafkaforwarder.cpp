@@ -6,13 +6,15 @@
 #include "collector/config.h"
 #include <catch2/catch_test_macros.hpp>
 #include <collector/kafkaforwarder.h>
+#include <simple_polygon_io/instruction_executrion.h>
 
 using namespace collector::config;
 using namespace trading::instructions;
 using forwarder::InstructionsExecutorAndForwarder;
 using forwarder::query_t;
 using json = nlohmann::json;
-
+using simple_polygon_io::instructor::instructor_executor_context;
+using simple_polygon_io::instructor::MetaInstruction;
 typedef std::vector<std::string> queries_t;
 
 
@@ -32,16 +34,8 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
         std::cout << config.to_json().dump(4) << std::endl;
         InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<TestInstruction>(config);
 
-//        std::function<Instructions<TestInstruction>()> test_instruction_lambda = []() -> Instructions<TestInstruction> {
-//            Instructions<TestInstruction> instructions;
-//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//            return instructions;
-//        };
 
         std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
-//            std::cout << "instructor_executor_context: " << instruction.to_json().dump(4) << std::endl;
-            // Aquí procesas la instrucción y generas las consultas (queries)
-            // sleep for 1 seconds
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             return {"SELECT 1", "SELECT 2"};
         };
@@ -52,7 +46,26 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
         };
 
         forwarder.start( strings_lambda, redis_lambda, nullptr);
-        //sleep for 30 seconds
+        //sleep for 10 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        forwarder.stop();
+    }
+}
+
+TEST_CASE("ForwarderConfig Tests with MetaInstruction", "[ForwarderConfig]") {
+    collector::config::ForwarderConfig config;
+
+    SECTION("Default Configuration") {
+        std::cout << config.to_json().dump(4) << std::endl;
+        InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<MetaInstruction>(config);
+
+        std::function<bool(query_t&)> redis_lambda = [](query_t& query) -> bool {
+            query += ";";
+            return true;
+        };
+
+        forwarder.start( instructor_executor_context, redis_lambda, nullptr);
+        //sleep for 10 seconds
         std::this_thread::sleep_for(std::chrono::seconds(10));
         forwarder.stop();
     }

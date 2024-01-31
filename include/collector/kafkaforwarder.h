@@ -321,4 +321,5 @@ namespace forwarder {
 
 
 }
+
 #endif //COLLECTOR_KAFKAFORWARDER_H

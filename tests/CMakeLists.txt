@@ -110,6 +110,7 @@ target_include_directories(test_processor
         ${HIREDIS_HEADER}
         ${SIMPLE_KAFKA_INCLUDE}
         ${TRADING_COMMON_INCLUDE}
+        ${SIMPLE_POLYGON_IO_INCLUDE}
 )
 
 target_link_libraries(test_kafkaforwarder PRIVATE Catch2::Catch2WithMain)
