@@ -10,6 +10,7 @@
 #include <common/common.h>
 #include <simple_polygon_io/config.h>
 #include <simple_redis/config.h>
+#include <simple_kafka/config.h>
 
 namespace collector::config {
     class CollectorConfig : public simple_polygon_io::config::PolygonIOConfig, public simple_redis::RedisConfig {
@@ -35,6 +36,34 @@ namespace collector::config {
         std::string database = common::get_env_variable_string("DATABASE", "Polygon");
         std::string table = common::get_env_variable_string("TABLE", "");
     };
+
+    class ForwarderConfig :
+            public simple_polygon_io::config::PolygonIOConfig,
+            public simple_redis::RedisConfig,
+            public simple_kafka::config::KafkaConfig
+            {
+    public:
+
+        bool validate() override;
+
+        [[nodiscard]] json to_json() const override;
+
+        void from_json(const json &j) override;
+
+        [[nodiscard]] std::string to_string() const override;
+
+        std::shared_ptr<simple_logger::Logger> logger = simple_polygon_io::config::PolygonIOConfig::logger;
+
+        std::chrono::milliseconds informer_interval = std::chrono::milliseconds(
+                common::get_env_variable_int("INFORMER_INTERVAL_MSEC", 333)); // TODO: check if needed
+        std::chrono::milliseconds producer_interval = std::chrono::milliseconds(
+                common::get_env_variable_int("PRODUCER_INTERVAL_MSEC", 10)); // TODO: check if needed
+        size_t max_queue_size = common::get_env_variable_int("MAX_QUEUE_SIZE", 10000);
+        std::chrono::seconds collect_interval = std::chrono::seconds(
+                common::get_env_variable_int("COLLECT_INTERVAL_SEC", 3600)); // TODO: check if needed
+        std::string redis_key = common::get_env_variable_string("REDIS_KEY", "");
+    };
+
 }
 
 #endif //COLLECTOR_CONFIG_H

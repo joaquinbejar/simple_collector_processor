@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 
 include(cmake/simple_polygon_io.cmake)
 include(cmake/simple_redis.cmake)
+include(cmake/trading_common.cmake)
+include(cmake/simple_kafka.cmake)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_definitions(NDEBUG)
@@ -17,9 +19,9 @@ set(COLLECTOR_SOURCE_FILES
         include/collector/config.h
         include/collector/exceptions.h
         include/collector/processor.h
+        include/collector/kafkaforwarder.h
         src/config.cpp
         src/exceptions.cpp
-#        src/processor.cpp
 )
 
 add_library(collector STATIC ${COLLECTOR_SOURCE_FILES})
@@ -31,6 +33,8 @@ if (CMAKE_DEBUG)
     message(STATUS "collector SIMPLE_LOGGER_INCLUDE: ${SIMPLE_LOGGER_INCLUDE}")
     message(STATUS "collector NLOHMANN_JSON_INCLUDE: ${NLOHMANN_JSON_INCLUDE}")
     message(STATUS "collector COMMON_INCLUDE: ${COMMON_INCLUDE}")
+    message(STATUS "collector SIMPLE_KAFKA_INCLUDE: ${SIMPLE_KAFKA_INCLUDE}")
+    message(STATUS "collector TRADING_COMMON_INCLUDE: ${TRADING_COMMON_INCLUDE}")
 endif ()
 
 target_include_directories(collector PUBLIC
@@ -45,6 +49,8 @@ target_include_directories(collector PUBLIC
         ${REDISCPP_HEADER17}
         ${REDISCPP_HEADERTLS}
         ${HIREDIS_HEADER}
+        ${SIMPLE_KAFKA_INCLUDE}
+        ${TRADING_COMMON_INCLUDE}
 )
 
 target_link_libraries(collector
@@ -56,6 +62,8 @@ target_link_libraries(collector
         libcurl_static
         simple_polygon_io
         simple_redis
+        simple_kafka
+        trading_common
 )
 
 
