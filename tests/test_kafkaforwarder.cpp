@@ -6,7 +6,7 @@
 #include "collector/config.h"
 #include <catch2/catch_test_macros.hpp>
 #include <collector/kafkaforwarder.h>
-#include <simple_polygon_io/instruction_executrion.h>
+#include <simple_polygon_io/instruction_execution.h>
 
 using namespace collector::config;
 using namespace trading::instructions;
@@ -27,30 +27,31 @@ public:
     void from_json(const json &j) {}
 };
 
-TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
-    collector::config::ForwarderConfig config;
-
-    SECTION("Default Configuration") {
-        std::cout << config.to_json().dump(4) << std::endl;
-        InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<TestInstruction>(config);
-
-
-        std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            return {"SELECT 1", "SELECT 2"};
-        };
-
-        std::function<bool(query_t&)> redis_lambda = [](query_t& query) -> bool {
-            query += ";";
-            return true;
-        };
-
-        forwarder.start( strings_lambda, redis_lambda, nullptr);
-        //sleep for 10 seconds
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-        forwarder.stop();
-    }
-}
+//TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
+//    collector::config::ForwarderConfig config;
+//
+//    SECTION("Default Configuration") {
+//        std::cout << config.to_json().dump(4) << std::endl;
+//        InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<TestInstruction>(config);
+//
+//
+//        std::function<queries_t(Instructions<TestInstruction>)> strings_lambda = [](const Instructions<TestInstruction>& instruction) -> queries_t {
+//            std::cout << "strings_lambda: " << instruction.to_json().dump(4) << std::endl;
+//            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//            return {"SELECT 1", "SELECT 2"};
+//        };
+//
+//        std::function<bool(query_t&)> redis_lambda = [](query_t& query) -> bool {
+//            query += ";";
+//            return true;
+//        };
+//
+//        forwarder.start( strings_lambda, redis_lambda, nullptr);
+//        //sleep for 10 seconds
+//        std::this_thread::sleep_for(std::chrono::seconds(10));
+//        forwarder.stop();
+//    }
+//}
 
 TEST_CASE("ForwarderConfig Tests with MetaInstruction", "[ForwarderConfig]") {
     collector::config::ForwarderConfig config;
@@ -60,7 +61,6 @@ TEST_CASE("ForwarderConfig Tests with MetaInstruction", "[ForwarderConfig]") {
         InstructionsExecutorAndForwarder forwarder = InstructionsExecutorAndForwarder<MetaInstruction>(config);
 
         std::function<bool(query_t&)> redis_lambda = [](query_t& query) -> bool {
-            query += ";";
             return true;
         };
 

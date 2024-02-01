@@ -161,7 +161,7 @@ namespace forwarder {
         /*
          * TASK: Get query_t from m_queue_queries and send it to Redis to insert in DB
          */
-        void m_query_forwarder(const std::function<bool(query_t&)> &query_forwarder_context) {
+        void m_query_forwarder(const std::function<bool(query_t &)> &query_forwarder_context) {
             m_config.logger->send<simple_logger::LogLevel::NOTICE>("Query Forwarder started");
             m_query_forwarder_is_running = true;
             m_redis_client.connect();
@@ -291,7 +291,7 @@ namespace forwarder {
         }
 
         void start(std::function<queries_t(Instructions<InstructionType>)> instructor_executor_context,
-                   std::function<bool(query_t&)> query_forwarder_context,
+                   std::function<bool(query_t &)> query_forwarder_context,
                    void *informer_context) {
 
 
