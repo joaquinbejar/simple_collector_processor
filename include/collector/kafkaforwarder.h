@@ -70,7 +70,8 @@ namespace forwarder {
         simple_redis::FIFORedisClient m_redis_client = simple_redis::FIFORedisClient(m_config);
 
 
-        ThreadQueue<Instructions<InstructionType>> m_queue_instructions;
+        ThreadQueueWithMaxSize<Instructions<InstructionType>> m_queue_instructions =
+                ThreadQueueWithMaxSize<Instructions<InstructionType>>((int) (m_config.max_queue_size / 10));
         ThreadQueueWithMaxSize<query_t> m_queue_queries = ThreadQueueWithMaxSize<query_t>(m_config.max_queue_size);
 
 
@@ -256,6 +257,9 @@ namespace forwarder {
                                                                               std::to_string(m_redis_counter) +
                                                                               " Redis errors: " +
                                                                               std::to_string(m_redis_errors));
+
+                m_config.logger->send<simple_logger::LogLevel::INFORMATIONAL>("Kafta Consumer Name: " +
+                                                                              m_config.get_kafka_consumer_name());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(m_config.informer_interval));
             }
