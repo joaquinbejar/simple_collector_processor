@@ -86,7 +86,10 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
                         "kafka_brokers": "localhost:9092",
                         "kafka_group_id": "group_id_1",
                         "kafka_msg_timeout": 3000,
-                        "kafka_topic": ["topic1", "topic2"]
+                        "kafka_topic": ["topic1", "topic2"],
+                        "kafka_flush_timeout": 1000,
+                        "kafka_warning_partition_eof": true,
+                        "kafka_consumer_name": "consumer_name"
                     },
                     "max_queue_size": 10000,
                     "polygonio": {
@@ -123,7 +126,10 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
                         "kafka_brokers": "localhost:9092",
                         "kafka_group_id": "group_id_1",
                         "kafka_msg_timeout": 3000,
-                        "kafka_topic": ["topic1", "topic2"]
+                        "kafka_topic": ["topic1", "topic2"],
+                        "kafka_flush_timeout": 1000,
+                        "kafka_warning_partition_eof": true,
+                        "kafka_consumer_name": "consumer_name"
                     },
                     "max_queue_size": 10000,
                     "polygonio": {
@@ -149,7 +155,7 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
                     "redis_key": "TEST"
                 })"_json;
         config.from_json(j);
-        std::string expected_str = R"("ForwarderConfig":{"collect_interval":3600,"informer_interval":333,"kafka":{"kafka_brokers":"localhost:9092","kafka_group_id":"group_id_1","kafka_msg_timeout":3000,"kafka_topic":["topic1","topic2"]},"max_queue_size":10000,"polygonio":{"m_polygon_api_key":"mykey","m_polygon_api_url":"https://api.polygon.io"},"producer_interval":10,"redis":{"connect_timeout":30000,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost","keep_alive":true,"loglevel":"info","password":"password","port":6379,"size":1000,"socket_timeout":30000,"tag":"tag","wait_timeout":30000},"redis_key":"TEST"})";
+        std::string expected_str = R"("ForwarderConfig":{"collect_interval":3600,"informer_interval":333,"kafka":{"kafka_brokers":"localhost:9092","kafka_consumer_name":"consumer_name","kafka_flush_timeout":1000,"kafka_group_id":"group_id_1","kafka_msg_timeout":3000,"kafka_topic":["topic1","topic2"],"kafka_warning_partition_eof":true},"max_queue_size":10000,"polygonio":{"m_polygon_api_key":"mykey","m_polygon_api_url":"https://api.polygon.io"},"producer_interval":10,"redis":{"connect_timeout":30000,"connection_idle_time":0,"connection_lifetime":0,"db":0,"host":"localhost","keep_alive":true,"loglevel":"info","password":"password","port":6379,"size":1000,"socket_timeout":30000,"tag":"tag","wait_timeout":30000},"redis_key":"TEST"})";
         REQUIRE(config.to_string() == expected_str);
     }
 
@@ -161,7 +167,10 @@ TEST_CASE("ForwarderConfig Tests", "[ForwarderConfig]") {
                         "kafka_brokers": "localhost:9092",
                         "kafka_group_id": "group_id_1",
                         "kafka_msg_timeout": 3000,
-                        "kafka_topic": ["topic1", "topic2"]
+                        "kafka_topic": ["topic1", "topic2"],
+                        "kafka_flush_timeout": 1000,
+                        "kafka_warning_partition_eof": true,
+                        "kafka_consumer_name": "consumer_name"
                     },
                     "max_queue_size": 10000,
                     "polygonio": {
