@@ -5,6 +5,13 @@ FetchContent_Declare(trading_common
         )
 FetchContent_MakeAvailable(trading_common)
 
+# trading_common v0.1.0 contains a chained comparison in src/order.cpp that
+# clang >= 21 rejects by default. Fixed upstream (joaquinbejar/trading_common#12);
+# drop this once a tag with the fix is released and pinned above.
+if (TARGET trading_common AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(trading_common PRIVATE -Wno-error=parentheses)
+endif ()
+
 set(TRADING_COMMON_INCLUDE ${trading_common_SOURCE_DIR}/include CACHE INTERNAL "")
 if (CMAKE_DEBUG)
         message(STATUS "ticker_collector/cmake trading_common_SOURCE_DIR ${trading_common_SOURCE_DIR}")
